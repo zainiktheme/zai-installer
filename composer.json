@@ -3,7 +3,7 @@
     "description": "Laravel Web Installer For Zainiklab",
     "require": {
         "php": ">=7.0.0",
-        "tsakib360/zai-installer": "^2.3"
+        "zainiklab/zai-installer": "1.*"
     },
     "license": "MIT",
     "authors": [
