@@ -1,14 +1,14 @@
 <?php
 
-namespace Tsakib360\ZaiInstaller\Http\Controllers;
+namespace Zainiklab\ZaiInstaller\Http\Controllers;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Tsakib360\ZaiInstaller\Events\EnvironmentSaved;
-use Tsakib360\ZaiInstaller\Http\Helpers\DatabaseManager;
+use Zainiklab\ZaiInstaller\Events\EnvironmentSaved;
+use Zainiklab\ZaiInstaller\Http\Helpers\DatabaseManager;
 
 class InstallController extends Controller
 {
@@ -160,7 +160,6 @@ class InstallController extends Controller
 
         return Redirect::route('ZaiInstaller::database')
                         ->with(['results' => $results]);
-
 
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tsakib360\ZaiInstaller\Events;
+namespace Zainiklab\ZaiInstaller\Events;
 
 use Illuminate\Http\Request;
 use Illuminate\Queue\SerializesModels;

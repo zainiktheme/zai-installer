@@ -1,6 +1,6 @@
 <?php
 
-namespace Tsakib360\ZaiInstaller\Providers;
+namespace Zainiklab\ZaiInstaller\Providers;
 
 use Illuminate\Support\ServiceProvider;
 

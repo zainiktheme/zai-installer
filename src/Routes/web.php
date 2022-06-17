@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Tsakib360\ZaiInstaller\Http\Controllers\InstallController;
+use Zainiklab\ZaiInstaller\Http\Controllers\InstallController;
 
 Route::group(['prefix' => 'install', 'as' => 'ZaiInstaller::', 'middleware' => ['web']], function () {
     Route::get('/', [InstallController::class, 'preInstall'])->name('pre-install');

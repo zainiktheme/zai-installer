@@ -1,6 +1,6 @@
 <?php
 
-namespace Tsakib360\ZaiInstaller\Http\Middleware;
+namespace Zainiklab\ZaiInstaller\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;

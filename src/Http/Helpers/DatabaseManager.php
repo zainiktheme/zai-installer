@@ -1,6 +1,6 @@
 <?php
 
-namespace Tsakib360\ZaiInstaller\Http\Helpers;
+namespace Zainiklab\ZaiInstaller\Http\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
