@@ -10,19 +10,20 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 class DatabaseManager
 {
-    /**
-     * Migrate and seed the database.
-     *
-     * @return array
-     */
+
+
     public function migrateAndSeed()
     {
-        $outputLog = new BufferedOutput;
+        try {
+            Artisan::call('migrate:fresh', ['--force'=> true]);
+            Artisan::call('db:seed', ['--force' => true]);
+        } catch (\Exception $e) {
+            return $this->response('Migration and Seeding Not Complete', 'error');
+        }
+        return $this->response('Seed Complete', 'success');
 
-        $this->sqlite($outputLog);
-
-        return $this->migrate($outputLog);
     }
+
 
     /**
      * Run the migration and call the seeder.
@@ -35,10 +36,10 @@ class DatabaseManager
         try {
             Artisan::call('migrate:fresh', ['--force'=> true], $outputLog);
         } catch (\Exception $e) {
-            return $this->response($e->getMessage(), 'error', $outputLog);
+            return $this->response('Migration not Complete', 'error', $outputLog);
         }
+        return $this->response('Seed Complete', 'success', $outputLog);
 
-        return $this->seed($outputLog);
     }
 
     /**
@@ -52,7 +53,7 @@ class DatabaseManager
         try {
             Artisan::call('db:seed', ['--force' => true], $outputLog);
         } catch (\Exception $e) {
-            return $this->response($e->getMessage(), 'error', $outputLog);
+            return $this->response('Seeding not Complete', 'error', $outputLog);
         }
 
         return $this->response('Seed Complete', 'success', $outputLog);
@@ -66,12 +67,11 @@ class DatabaseManager
      * @param \Symfony\Component\Console\Output\BufferedOutput $outputLog
      * @return array
      */
-    private function response($message, $status, BufferedOutput $outputLog)
+    private function response($message, $status)
     {
         return [
             'status' => $status,
-            'message' => $message,
-            'dbOutputLog' => $outputLog->fetch(),
+            'message' => $message
         ];
     }
 

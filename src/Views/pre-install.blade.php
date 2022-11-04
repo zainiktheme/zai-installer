@@ -135,10 +135,10 @@
     <div class="single-section">
         <h4 class="section-title">Please make sure you have set  the Writable permission on the following folders/files :</h4>
         <ul class="permission-lsit">
-            <li>
-                <span class="permission-text">./routes</span>
-                <span class="status {{ File::exists(base_path('routes')) && $route_value == 1 ? '' : 'error' }}">{{ File::exists(base_path('routes')) && $route_value == 1 ? 'Ok' : 'Error' }}</span>
-            </li>
+{{--            <li>--}}
+{{--                <span class="permission-text">./routes</span>--}}
+{{--                <span class="status {{ File::exists(base_path('routes')) && $route_value == 1 ? '' : 'error' }}">{{ File::exists(base_path('routes')) && $route_value == 1 ? 'Ok' : 'Error' }}</span>--}}
+{{--            </li>--}}
             <li>
                 <span class="permission-text">./resources</span>
                 <span class="status {{ File::exists(base_path('resources')) && $resource_value == 1 ? '' : 'error' }}">{{ File::exists(base_path('resources')) && $resource_value == 1 ? 'Ok' : 'Error' }}</span>
@@ -165,7 +165,7 @@
             <div class="col-6">
                 <form action="{{ route('ZaiInstaller::server-validation') }}" method="post">
                     @csrf
-                    <input type="hidden" name="routes" value="{{ File::exists(base_path('routes')) && $route_value == 1 ? 1 : 0 }}">
+{{--                    <input type="hidden" name="routes" value="{{ File::exists(base_path('routes')) && $route_value == 1 ? 1 : 0 }}">--}}
                     <input type="hidden" name="resources" value="{{ File::exists(base_path('resources')) && $resource_value == 1 ? 1 : 0 }}">
                     <input type="hidden" name="public" value="{{ File::exists(base_path('public')) && $public_value == 1 ? 1 : 0 }}">
                     <input type="hidden" name="storage" value="{{ File::exists(base_path('storage')) && $storage_value == 1 ? 1 : 0 }}">

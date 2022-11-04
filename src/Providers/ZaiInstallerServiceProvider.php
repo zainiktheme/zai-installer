@@ -30,7 +30,7 @@ class ZaiInstallerServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        
+
     }
 
     /**

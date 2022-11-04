@@ -33,10 +33,10 @@ class InstallController extends Controller
         $public_value = 0;
         $storage_value = 0;
         $env_value = 0;
-        $route_perm = substr(sprintf('%o', fileperms(base_path('routes'))), -4);
-        if($route_perm == '0777') {
-            $route_value = 1;
-        }
+//        $route_perm = substr(sprintf('%o', fileperms(base_path('routes'))), -4);
+//        if($route_perm == '0777') {
+//            $route_value = 1;
+//        }
         $resource_prem = substr(sprintf('%o', fileperms(base_path('resources'))), -4);
         if($resource_prem == '0777') {
             $resource_value = 1;
@@ -154,19 +154,20 @@ class InstallController extends Controller
         if (! $this->checkDatabaseConnection($request)) {
             return Redirect::back()->withErrors('Database credential is not correct!');
         }
-        $results = $this->saveENV($request);
+        $results = true;//$this->saveENV($request);
 
         event(new EnvironmentSaved($request));
 
         return Redirect::route('ZaiInstaller::database')
-                        ->with(['results' => $results]);
+            ->with(['results' => $results]);
+
 
     }
 
     public function database()
     {
         $response = $this->databaseManager->migrateAndSeed();
-
+        dd($response);
         if($response['status'] = 'success') {
             $installedLogFile = storage_path('installed');
 
@@ -201,7 +202,7 @@ class InstallController extends Controller
 
     }
 
-    public function setEnvValue($values) 
+    public function setEnvValue($values)
     {
         $envFile = app()->environmentFilePath();
         $str = file_get_contents($envFile);
@@ -216,7 +217,7 @@ class InstallController extends Controller
                 if (!$keyPosition || !$endOfLinePosition || !$oldLine) {
                     $str .= "{$envKey}={$envValue}\n";
                 } else {
-                    $str = str_replace($oldLine, "{$envKey}={$envValue}", $str);
+                    $str = str_replace($oldLine, "{$envKey}=\"{$envValue}\"", $str);
                 }
             }
         }
@@ -249,10 +250,8 @@ class InstallController extends Controller
         ]);
 
         DB::purge();
-
         try {
             DB::connection()->getPdo();
-
             return true;
         } catch (\Exception $e) {
             return false;
