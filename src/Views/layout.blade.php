@@ -11,13 +11,14 @@
     <link rel="stylesheet" href="{{ asset('zaifiles/assets/style.css') }}">
 </head>
 <body>
+    @yield('preloader')
     <div class="breadcrumb-area">
         <div class="container">
             <div class="row">
-                <div class="col-xl-4 col-lg-6 col-md-8">
+                <div class="col-xl-12 col-lg-12 col-md-12">
                     <div class="breadcrumb-text">
-                        <a class="brand-logo" href="index.html"><img src="{{ asset('zaifiles/assets/images/logo.png') }}" alt="logo" /></a>
-                        <h2>Zai Installer - A Laravel Web Installer</h2>
+                        <a class="brand-logo" href="#"><img src="{{ asset('uploads_demo/setting/logo.png') }}" alt="logo"></a>
+                        <h2>LMSZAI - Learning Management System</h2>
                         <p>{{ \Carbon\Carbon::parse(now())->format('l, j F Y') }}</p>
                     </div>
                 </div>
@@ -44,6 +45,7 @@
             </div>
         </div>
     </div>
-    <script src="{{ asset('zaifiles/assets/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('frontend/assets/vendor/jquery/jquery-3.6.0.min.js') }}"></script>
+    @stack('script')
 </body>
 </html>

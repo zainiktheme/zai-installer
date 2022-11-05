@@ -21,8 +21,8 @@
                       <tr>
                         <td>PHP Version</td>
                         <td><strong>{{ phpversion() }}</strong></td>
-                        <td><strong>7.2+</strong></td>
-                        <td><span class="status {{ phpversion() < 7.2 ? 'error' : '' }}">{{ phpversion() < 7.2 ? 'Error' : 'Ok' }}</span></td>
+                        <td><strong>^8.0.0</strong></td>
+                        <td><span class="status {{ phpversion() < 8.0 ? 'error' : '' }}">{{ phpversion() < 8.0 ? 'Error' : 'Ok' }}</span></td>
                       </tr>
                     </tbody>
                 </table>
@@ -160,7 +160,7 @@
     <div>
         <div class="row">
             <div class="col-6">
-                <button class="primary-btn">Close</button>
+                <a href="{{ route('ZaiInstaller::pre-install') }}" class="primary-btn">Close</a>
             </div>
             <div class="col-6">
                 <form action="{{ route('ZaiInstaller::server-validation') }}" method="post">

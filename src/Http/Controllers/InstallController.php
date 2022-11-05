@@ -38,19 +38,19 @@ class InstallController extends Controller
 //            $route_value = 1;
 //        }
         $resource_prem = substr(sprintf('%o', fileperms(base_path('resources'))), -4);
-        if($resource_prem == '0777') {
+        if($resource_prem == '0777' || $resource_prem == '0775') {
             $resource_value = 1;
         }
         $public_prem = substr(sprintf('%o', fileperms(base_path('public'))), -4);
-        if($public_prem == '0777') {
+        if($public_prem == '0777' || $public_prem == '0775' || $public_prem == '0750') {
             $public_value = 1;
         }
         $storage_prem = substr(sprintf('%o', fileperms(base_path('storage'))), -4);
-        if($storage_prem == '0777') {
+        if($storage_prem == '0777' || $storage_prem == '0775') {
             $storage_value = 1;
         }
         $env_prem = substr(sprintf('%o', fileperms(base_path('.env'))), -4);
-        if($env_prem == '0777' || $env_prem == '0666') {
+        if($env_prem == '0777' || $env_prem == '0666' || $env_prem == '0644' || $env_prem == '0775' || $env_prem == '0664') {
             $env_value = 1;
         }
         if (file_exists(storage_path('installed'))) {
@@ -154,7 +154,7 @@ class InstallController extends Controller
         if (! $this->checkDatabaseConnection($request)) {
             return Redirect::back()->withErrors('Database credential is not correct!');
         }
-        $results = true;//$this->saveENV($request);
+        $results = $this->saveENV($request);
 
         event(new EnvironmentSaved($request));
 
@@ -167,7 +167,6 @@ class InstallController extends Controller
     public function database()
     {
         $response = $this->databaseManager->migrateAndSeed();
-        dd($response);
         if($response['status'] = 'success') {
             $installedLogFile = storage_path('installed');
 
@@ -213,9 +212,8 @@ class InstallController extends Controller
                 $keyPosition = strpos($str, "{$envKey}=");
                 $endOfLinePosition = strpos($str, "\n", $keyPosition);
                 $oldLine = substr($str, $keyPosition, $endOfLinePosition - $keyPosition);
-
                 if (!$keyPosition || !$endOfLinePosition || !$oldLine) {
-                    $str .= "{$envKey}={$envValue}\n";
+                    $str .= "{$envKey}=\"{$envValue}\"\n";
                 } else {
                     $str = str_replace($oldLine, "{$envKey}=\"{$envValue}\"", $str);
                 }
