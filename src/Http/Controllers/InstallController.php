@@ -148,43 +148,44 @@ class InstallController extends Controller
 
     public function final(Request $request)
     {
-        $request->validate([
-            'purchase_code' => 'required',
-            'email' => 'bail|required|email',
-            'app_name' => 'bail|required',
-            'app_url' => 'bail|required|url',
-        ],[
-            'purchase_code.required' => 'Purchase code field is required',
-            'email.required' => 'Customer email field is required',
-            'email.email' => 'Customer email field is must a valid email',
-            'app_name.required' => 'App Name field is required',
-            'app_url.required' => 'Domain field is required',
-            'app_url.url' => 'Domain field is must a valid url',
-        ]);
+        if(config('app.app_code')) {
+
+            $request->validate([
+                'purchase_code' => 'required',
+                'email' => 'bail|required|email',
+                'app_name' => 'bail|required',
+                'app_url' => 'bail|required|url',
+            ], [
+                'purchase_code.required' => 'Purchase code field is required',
+                'email.required' => 'Customer email field is required',
+                'email.email' => 'Customer email field is must a valid email',
+                'app_name.required' => 'App Name field is required',
+                'app_url.required' => 'Domain field is required',
+                'app_url.url' => 'Domain field is must a valid url',
+            ]);
 
 
-        if (! $this->checkDatabaseConnection($request)) {
-            return Redirect::back()->withErrors('Database credential is not correct!');
-        }
+            if (!$this->checkDatabaseConnection($request)) {
+                return Redirect::back()->withErrors('Database credential is not correct!');
+            }
 
-        $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
-            'app' => config('app.app_code'),
-            'domain' => $request->app_url,
-            'email' => $request->email,
-            'purchase_code' => $request->purchase_code,
-            'version' => config('app.current_version')
-        ]);
+            $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
+                'app' => config('app.app_code'),
+                'domain' => $request->app_url,
+                'email' => $request->email,
+                'purchase_code' => $request->purchase_code,
+                'version' => config('app.current_version')
+            ]);
 
-        if($response->successful()){
-            $data = $response->object();
-            if($data->status !== 'success'){
-                return Redirect::back()->withErrors($data->message);
+            if ($response->successful()) {
+                $data = $response->object();
+                if ($data->status !== 'success') {
+                    return Redirect::back()->withErrors($data->message);
+                }
+            } else {
+                return Redirect::back()->withErrors('Something went wrong with your purchase key.');
             }
         }
-        else{
-            return Redirect::back()->withErrors('Something went wrong with your purchase key.');
-        }
-
 
         $results = $this->saveENV($request);
 
