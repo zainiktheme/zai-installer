@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Zainiklab\ZaiInstaller\Events\EnvironmentSaved;
+use Illuminate\Support\Facades\Http;
 use Zainiklab\ZaiInstaller\Http\Helpers\DatabaseManager;
 
 class InstallController extends Controller
@@ -147,13 +148,44 @@ class InstallController extends Controller
 
     public function final(Request $request)
     {
-        if($request->purchasecode != 'NHLE-L6MI-4GE4-ETEV') {
-            return Redirect::back()->withErrors('Purchase code not matched!');
-        }
+        $request->validate([
+            'purchase_code' => 'required',
+            'email' => 'bail|required|email',
+            'app_name' => 'bail|required',
+            'app_url' => 'bail|required|url',
+        ],[
+            'purchase_code.required' => 'Purchase code field is required',
+            'email.required' => 'Customer email field is required',
+            'email.email' => 'Customer email field is must a valid email',
+            'app_name.required' => 'App Name field is required',
+            'app_url.required' => 'Domain field is required',
+            'app_url.url' => 'Domain field is must a valid url',
+        ]);
+
 
         if (! $this->checkDatabaseConnection($request)) {
             return Redirect::back()->withErrors('Database credential is not correct!');
         }
+
+        $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
+            'app' => config('app.app_code'),
+            'domain' => $request->app_url,
+            'email' => $request->email,
+            'purchase_code' => $request->purchase_code,
+            'version' => config('app.current_version')
+        ]);
+
+        if($response->successful()){
+            $data = $response->object();
+            if($data->status !== 'success'){
+                return Redirect::back()->withErrors($data->message);
+            }
+        }
+        else{
+            return Redirect::back()->withErrors('Something went wrong with your purchase key.');
+        }
+
+
         $results = $this->saveENV($request);
 
         event(new EnvironmentSaved($request));
