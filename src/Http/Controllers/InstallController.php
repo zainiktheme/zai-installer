@@ -154,14 +154,14 @@ class InstallController extends Controller
                 'purchase_code' => 'required',
                 'email' => 'bail|required|email',
                 'app_name' => 'bail|required',
-                'app_url' => 'bail|required|url',
+//                'app_url' => 'bail|required|url',
             ], [
                 'purchase_code.required' => 'Purchase code field is required',
                 'email.required' => 'Customer email field is required',
                 'email.email' => 'Customer email field is must a valid email',
                 'app_name.required' => 'App Name field is required',
-                'app_url.required' => 'Domain field is required',
-                'app_url.url' => 'Domain field is must a valid url',
+//                'app_url.required' => 'Domain field is required',
+//                'app_url.url' => 'Domain field is must a valid url',
             ]);
 
 
@@ -171,7 +171,7 @@ class InstallController extends Controller
 
             $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
                 'app' => config('app.app_code'),
-                'domain' => $request->app_url,
+//                'domain' => $request->app_url,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
                 'version' => config('app.current_version')
