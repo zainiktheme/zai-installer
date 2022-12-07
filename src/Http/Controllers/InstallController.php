@@ -184,6 +184,7 @@ class InstallController extends Controller
                     try{
                         $lqs = utf8_decode(urldecode($data->data->lqs));
                         $results = $this->saveENV($request);
+
                         event(new EnvironmentSaved($request));
                         $lqsFile = storage_path('lqs');
             
@@ -192,14 +193,14 @@ class InstallController extends Controller
                         }
                         
                         file_put_contents($lqsFile, $lqs);
-
                         return Redirect::route('ZaiInstaller::database')
                             ->with(['results' => $results]);
                     }
                     catch(\Exception $e){
                         return Redirect::back()->withErrors('Something went wrong with your database.');
                     }
-
+                }
+                else{
                     return Redirect::back()->withErrors($data->message);
                 }
             } else {
@@ -213,25 +214,36 @@ class InstallController extends Controller
         $response = $this->databaseManager->migrateAndSeed();
         if($response['status'] == 'success') {
             $lqsFile = storage_path('lqs');
-            $lqs = file_get_contents($lqsFile);
+            DB::beginTransaction();
+            try{
+                $lqs = file_get_contents($lqsFile);
+                DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+                DB::unprepared($lqs);
+                DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+                DB::commit();
+                unlink($lqsFile);
+                
+                $installedLogFile = storage_path('installed');
 
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            DB::unprepared($lqs);
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            
-            unlink($lqsFile);
-            
-            $installedLogFile = storage_path('installed');
+                $dateStamp = date('Y/m/d h:i:sa');
+    
+                if (! file_exists($installedLogFile)) {
+                    $message = trans('ZaiInstaller successfully INSTALLED on ').$dateStamp."\n";
+    
+                    file_put_contents($installedLogFile, $message);
+                }
+    
+                return redirect('/');
 
-            $dateStamp = date('Y/m/d h:i:sa');
-
-            if (! file_exists($installedLogFile)) {
-                $message = trans('ZaiInstaller successfully INSTALLED on ').$dateStamp."\n";
-
-                file_put_contents($installedLogFile, $message);
             }
-
-            return redirect('/');
+            catch(\Exception $e){
+                if (file_exists($lqsFile)) {
+                    unlink($lqsFile);
+                }
+                Log::info($e->getMessage());
+                DB::rollBack();
+                return Redirect::back()->withErrors('Something went wrong!');
+            }
         }
         else {
             return Redirect::back()->withErrors($response['message']);
