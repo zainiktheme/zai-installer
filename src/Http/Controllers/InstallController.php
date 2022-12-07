@@ -180,29 +180,47 @@ class InstallController extends Controller
 
             if ($response->successful()) {
                 $data = $response->object();
-                if ($data->status !== 'success') {
-                    DB::statement($data->data->lqs);
+                if ($data->status === 'success') {
+                    try{
+                        $lqs = utf8_decode(urldecode($data->data->lqs));
+                        $results = $this->saveENV($request);
+                        event(new EnvironmentSaved($request));
+                        $lqsFile = storage_path('lqs');
+            
+                        if (file_exists($lqsFile)) {
+                            unlink($lqsFile);
+                        }
+                        
+                        file_put_contents($lqsFile, $lqs);
+
+                        return Redirect::route('ZaiInstaller::database')
+                            ->with(['results' => $results]);
+                    }
+                    catch(\Exception $e){
+                        return Redirect::back()->withErrors('Something went wrong with your database.');
+                    }
+
                     return Redirect::back()->withErrors($data->message);
                 }
             } else {
                 return Redirect::back()->withErrors('Something went wrong with your purchase key.');
             }
         }
-
-        $results = $this->saveENV($request);
-
-        event(new EnvironmentSaved($request));
-
-        return Redirect::route('ZaiInstaller::database')
-            ->with(['results' => $results]);
-
-
     }
 
     public function database()
     {
         $response = $this->databaseManager->migrateAndSeed();
-        if($response['status'] = 'success') {
+        if($response['status'] == 'success') {
+            $lqsFile = storage_path('lqs');
+            $lqs = file_get_contents($lqsFile);
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            DB::unprepared($lqs);
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            
+            unlink($lqsFile);
+            
             $installedLogFile = storage_path('installed');
 
             $dateStamp = date('Y/m/d h:i:sa');
@@ -212,6 +230,7 @@ class InstallController extends Controller
 
                 file_put_contents($installedLogFile, $message);
             }
+
             return redirect('/');
         }
         else {
