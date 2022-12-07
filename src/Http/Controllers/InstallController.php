@@ -175,7 +175,7 @@ class InstallController extends Controller
                 'type' => 0,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
-                'version' => config('app.current_version')
+                'version' => config('app.build_version')
             ]);
 
             if ($response->successful()) {
