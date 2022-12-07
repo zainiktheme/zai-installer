@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Zainiklab\ZaiInstaller\Events\EnvironmentSaved;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Zainiklab\ZaiInstaller\Http\Helpers\DatabaseManager;
-use Illuminate\Support\Facades\DB;
 
 class InstallController extends Controller
 {
@@ -197,7 +197,7 @@ class InstallController extends Controller
                             ->with(['results' => $results]);
                     }
                     catch(\Exception $e){
-                        return Redirect::back()->withErrors('Something went wrong with your database.');
+                        return Redirect::back()->withErrors($e->getMessage());
                     }
                 }
                 else{
