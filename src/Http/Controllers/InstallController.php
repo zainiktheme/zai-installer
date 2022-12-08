@@ -169,13 +169,14 @@ class InstallController extends Controller
             if (!$this->checkDatabaseConnection($request)) {
                 return Redirect::back()->withErrors('Database credential is not correct!');
             }
-
+            
             $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
                 'app' => config('app.app_code'),
                 'type' => 0,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
-                'version' => config('app.build_version')
+                'version' => config('app.build_version'),
+                'url' => $request->fullUrl()
             ]);
 
             if ($response->successful()) {
@@ -225,12 +226,14 @@ class InstallController extends Controller
                 
                 $installedLogFile = storage_path('installed');
 
-                $dateStamp = date('Y/m/d h:i:sa');
-    
                 if (! file_exists($installedLogFile)) {
-                    $message = trans('ZaiInstaller successfully INSTALLED on ').$dateStamp."\n";
+                    $data = json_encode([
+                        'i' => date('ymdhis'),
+                        'u' => date('ymdhis'),
+                        'd' => base64_encode(get_domain_name(request()->fullUrl())),
+                    ]);
     
-                    file_put_contents($installedLogFile, $message);
+                    file_put_contents($installedLogFile, $data);
                 }
     
                 return redirect('/');
