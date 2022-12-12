@@ -207,6 +207,9 @@ class InstallController extends Controller
                 return Redirect::back()->withErrors('Something went wrong with your purchase key.');
             }
         }
+        else{
+            return Redirect::back()->withErrors('Something went wrong with your purchase key.');
+        }
     }
 
     public function database()
