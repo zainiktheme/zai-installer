@@ -16,7 +16,7 @@ class DatabaseManager
     {
         try {
             Artisan::call('migrate:fresh', ['--force'=> true]);
-            // Artisan::call('db:seed', ['--force' => true]);
+            Artisan::call('db:seed', ['--force' => true]);
         } catch (\Exception $e) {
             return $this->response($e->getMessage(), 'error');
         }

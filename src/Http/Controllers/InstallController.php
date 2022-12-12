@@ -150,16 +150,15 @@ class InstallController extends Controller
     public function final(Request $request)
     {
         if(config('app.app_code')) {
-
             $request->validate([
-                'purchase_code' => 'required',
-                'email' => 'bail|required|email',
+//                'purchase_code' => 'required',
+//                'email' => 'bail|required|email',
                 'app_name' => 'bail|required',
 //                'app_url' => 'bail|required|url',
             ], [
-                'purchase_code.required' => 'Purchase code field is required',
-                'email.required' => 'Customer email field is required',
-                'email.email' => 'Customer email field is must a valid email',
+//                'purchase_code.required' => 'Purchase code field is required',
+//                'email.required' => 'Customer email field is required',
+//                'email.email' => 'Customer email field is must a valid email',
                 'app_name.required' => 'App Name field is required',
 //                'app_url.required' => 'Domain field is required',
 //                'app_url.url' => 'Domain field is must a valid url',
@@ -169,7 +168,7 @@ class InstallController extends Controller
             if (!$this->checkDatabaseConnection($request)) {
                 return Redirect::back()->withErrors('Database credential is not correct!');
             }
-            
+
             $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
                 'app' => config('app.app_code'),
                 'type' => 0,
@@ -188,11 +187,11 @@ class InstallController extends Controller
 
                         event(new EnvironmentSaved($request));
                         $lqsFile = storage_path('lqs');
-            
+
                         if (file_exists($lqsFile)) {
                             unlink($lqsFile);
                         }
-                        
+
                         file_put_contents($lqsFile, $lqs);
                         return Redirect::route('ZaiInstaller::database')
                             ->with(['results' => $results]);
@@ -219,27 +218,28 @@ class InstallController extends Controller
             try{
                 $lqs = file_get_contents($lqsFile);
                 DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-                DB::unprepared($lqs);
+                if($lqs != null && $lqs != ""){
+                    DB::unprepared($lqs);
+                }
                 DB::statement('SET FOREIGN_KEY_CHECKS=1;');
                 DB::commit();
                 unlink($lqsFile);
-                
+
                 $installedLogFile = storage_path('installed');
 
                 if (! file_exists($installedLogFile)) {
                     $data = json_encode([
                         'i' => date('ymdhis'),
                         'u' => date('ymdhis'),
-                        'd' => base64_encode(get_domain_name(request()->fullUrl())),
+                        'd' => base64_encode($this->get_domain_name(request()->fullUrl())),
                     ]);
-    
+
                     file_put_contents($installedLogFile, $data);
                 }
-    
+
                 return redirect('/');
 
-            }
-            catch(\Exception $e){
+            }catch(\Exception $e){
                 if (file_exists($lqsFile)) {
                     unlink($lqsFile);
                 }
@@ -252,7 +252,16 @@ class InstallController extends Controller
             return Redirect::back()->withErrors($response['message']);
         }
     }
-
+    function get_domain_name($url){
+        $parseUrl = parse_url(trim($url));
+        if(isset($parseUrl['host'])) {
+            $host = $parseUrl['host'];
+        } else {
+            $path = explode('/', $parseUrl['path']);
+            $host = $path[0];
+        }
+        return  trim($host);
+    }
     public function saveENV(Request $request)
     {
         $env_val['APP_KEY'] = 'base64:'.base64_encode(Str::random(32));
