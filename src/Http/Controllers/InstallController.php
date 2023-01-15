@@ -471,15 +471,6 @@ class InstallController extends Controller
                     fwrite($fp, $str);
                     fclose($fp);
                 }
-            } else if (strtoupper($envKey) == $envKey) {
-                $envValue = str_replace(chr(92), "\\\\", $envValue);
-                $envValue = str_replace('"', '\"', $envValue);
-                $newLine = "{$envKey}=\"{$envValue}\"\n";
-                $str .= $newLine;
-                $str = substr($str, 0, -1);
-                $fp = fopen($envFile, 'w');
-                fwrite($fp, $str);
-                fclose($fp);
             }
 
             $this->logger->log('ENV Write END', $envKey.'=>'.$envValue);
