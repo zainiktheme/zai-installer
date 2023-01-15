@@ -179,7 +179,7 @@ class InstallController extends Controller
                 'type' => 0,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
-                'version' => 7,
+                'version' => config('app.build_version'),
                 'url' => $request->fullUrl(),
                 'app_url' => $request->app_url
             ];
