@@ -18,13 +18,14 @@ class InstallController extends Controller
      * @var DatabaseManager
      */
     private $databaseManager;
+    private $logger;
 
     /**
      * @param DatabaseManager $databaseManager
      */
     public function __construct(DatabaseManager $databaseManager)
     {
-
+        $this->logger = new Logger(storage_path().'/logs/'.'install.log');
         $this->databaseManager = $databaseManager;
     }
 
@@ -35,24 +36,24 @@ class InstallController extends Controller
         $public_value = 0;
         $storage_value = 0;
         $env_value = 0;
-//        $route_perm = substr(sprintf('%o', fileperms(base_path('routes'))), -4);
-//        if($route_perm == '0777') {
-//            $route_value = 1;
-//        }
+        //        $route_perm = substr(sprintf('%o', fileperms(base_path('routes'))), -4);
+        //        if($route_perm == '0777') {
+        //            $route_value = 1;
+        //        }
         $resource_prem = substr(sprintf('%o', fileperms(base_path('resources'))), -4);
-        if($resource_prem == '0777' || $resource_prem == '0775') {
+        if ($resource_prem == '0777' || $resource_prem == '0775') {
             $resource_value = 1;
         }
         $public_prem = substr(sprintf('%o', fileperms(base_path('public'))), -4);
-        if($public_prem == '0777' || $public_prem == '0775' || $public_prem == '0750') {
+        if ($public_prem == '0777' || $public_prem == '0775' || $public_prem == '0750') {
             $public_value = 1;
         }
         $storage_prem = substr(sprintf('%o', fileperms(base_path('storage'))), -4);
-        if($storage_prem == '0777' || $storage_prem == '0775') {
+        if ($storage_prem == '0777' || $storage_prem == '0775') {
             $storage_value = 1;
         }
         $env_prem = substr(sprintf('%o', fileperms(base_path('.env'))), -4);
-        if($env_prem == '0777' || $env_prem == '0666' || $env_prem == '0644' || $env_prem == '0775' || $env_prem == '0664') {
+        if ($env_prem == '0777' || $env_prem == '0666' || $env_prem == '0644' || $env_prem == '0775' || $env_prem == '0664') {
             $env_value = 1;
         }
         if (file_exists(storage_path('installed'))) {
@@ -66,7 +67,7 @@ class InstallController extends Controller
         if (file_exists(storage_path('installed'))) {
             return redirect('/');
         }
-        if(session()->has('validated')) {
+        if (session()->has('validated')) {
             return view('zainiklab.installer.config');
         }
         return redirect(route('ZaiInstaller::pre-install'));
@@ -74,7 +75,7 @@ class InstallController extends Controller
 
     public function serverValidation(Request $request)
     {
-        if($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && $this->allow_url_fopen() == 1 && $this->openssl() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1){
+        if ($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && $this->allow_url_fopen() == 1 && $this->openssl() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1) {
             session()->put('validated', 'Yes');
             return redirect(route('ZaiInstaller::config'));
         }
@@ -149,115 +150,270 @@ class InstallController extends Controller
 
     public function final(Request $request)
     {
-        if(config('app.app_code')) {
-            $request->validate([
-//                'purchase_code' => 'required',
-//                'email' => 'bail|required|email',
-                'app_name' => 'bail|required',
-//                'app_url' => 'bail|required|url',
-            ], [
-//                'purchase_code.required' => 'Purchase code field is required',
-//                'email.required' => 'Customer email field is required',
-//                'email.email' => 'Customer email field is must a valid email',
-                'app_name.required' => 'App Name field is required',
-//                'app_url.required' => 'Domain field is required',
-//                'app_url.url' => 'Domain field is must a valid url',
+        $this->logger->log('Final install start', '=========START========');
+        $this->logger->log('Request Data', $request->all());
+        if (config('app.app_code')) {
+            $isValidDomain = $this->is_valid_domain_name($request->fullUrl());
+            
+            if ($isValidDomain) {
+                $rules = [
+                    'app_name' => 'bail|required',
+                ];
+            } else {
+                $rules = [
+                    'purchase_code' => 'required',
+                    'email' => 'bail|required|email',
+                    'app_name' => 'bail|required',
+                ];
+            }
+            
+            $request->validate($rules, [
+                'purchase_code.required' => 'Purchase code field is required',
+                'email.required' => 'Customer email field is required',
+                'email.email' => 'Customer email field is must a valid email',
+                'app_name.required' => 'App name field is required',
             ]);
 
-
-            if (!$this->checkDatabaseConnection($request)) {
-                return Redirect::back()->withErrors('Database credential is not correct!');
-            }
-
-            $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', [
+            $requestData = [
                 'app' => config('app.app_code'),
                 'type' => 0,
                 'email' => $request->email,
                 'purchase_code' => $request->purchase_code,
-                'version' => config('app.build_version'),
-                'url' => $request->fullUrl()
-            ]);
+                'version' => 7,
+                'url' => $request->fullUrl(),
+                'app_url' => $request->app_url
+            ];
+            
+            
+            if (!$this->checkDatabaseConnection($request)) {
+                $this->logger->log('End with', 'Database credential is not correct!');
+                $this->logger->log('', '==============END=============');
+                return Redirect::back()->withErrors('Database credential is not correct!');
+            }
+            
+            if (!$isValidDomain) {
+                $this->logger->log('Domain', 'Invalid');
+                $this->logger->log('URL', $request->fullUrl());
 
+                $this->logger->log('Purchase key', 'Validation checking start');
+
+                $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/int-log-fo-loc', $requestData);
+                $this->logger->log('Purchase key', 'Validation checking END');
+                $this->logger->log('', '======Response print START=====');
+                $this->logger->log('Response data', json_encode($response->object()));
+                $this->logger->log('', '======Response print END=====');
+
+                if ($response->successful()) {
+                    $this->logger->log('Response', 'Successfull');
+                    $data = $response->object();
+                    if ($data->status === 'success') {
+                        $this->logger->log('Response status', 'success');
+                        $this->logger->log('Step-1', 'Install info write Start');
+                        $this->saveInfoInFile($request->fullUrl(), $request->purchase_code);
+                        $this->logger->log('Step-1', 'Install info write END');
+
+                        $this->logger->log('ENV', 'Write start');
+                        $results = $this->saveENV($request);
+                        $this->logger->log('ENV', 'Write END');
+                        $this->logger->log('ENV Write', $results ? 'True' : 'False');
+                        
+                        $this->logger->log('ENV save', 'Event Call START');
+                        event(new EnvironmentSaved($request));
+                        $this->logger->log('ENV save', 'Event Call END');
+
+                        $this->logger->log('Step-2', 'Redirecting to database insert');
+                        return Redirect::route('ZaiInstaller::database');
+                    } else {
+                        $this->logger->log('End with api response', 'Failed');
+                        $this->logger->log('', '==============END=============');
+                        return Redirect::back()->withErrors($data->message);
+                    }
+                } else {
+                    $this->logger->log('End with', 'Purchase key invalid');
+                    $this->logger->log('', '==============END=============');
+                    return Redirect::back()->withErrors('Something went wrong with your purchase key.');
+                }
+            }
+
+            $this->logger->log('Domain', 'Valid');
+            $this->logger->log('Purchase key', 'validation checking start');
+            $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/active', $requestData);
+            $this->logger->log('Purchase key', 'Validation checking end');
+            $this->logger->log('', '======Response print START=====');
+            $this->logger->log('Response data', json_encode($response->object()));
+            $this->logger->log('', '======Response print END=====');
+            
             if ($response->successful()) {
+                $this->logger->log('Response', 'Successfull');
                 $data = $response->object();
                 if ($data->status === 'success') {
-                    try{
+                    $this->logger->log('Response status', 'success');
+                    try {
                         $lqs = utf8_decode(urldecode($data->data->lqs));
+                        $this->logger->log('ENV', 'Write start');
                         $results = $this->saveENV($request);
-
+                        $this->logger->log('ENV', 'Write END');
+                        $this->logger->log('ENV Write', $results);
+                        
+                        $this->logger->log('ENV save', 'Event Call START');
                         event(new EnvironmentSaved($request));
+                        $this->logger->log('ENV save', 'Event Call END');
+                        
                         $lqsFile = storage_path('lqs');
-
+                        
                         if (file_exists($lqsFile)) {
                             unlink($lqsFile);
                         }
+                        
+                        $this->logger->log('Step-1', 'Install info write Start');
+                        $this->saveInfoInFile($request->fullUrl(), $request->purchase_code);
+                        $this->logger->log('Step-1', 'Install info write END');
 
+                        $this->logger->log('LQS file', 'SAVE start');
                         file_put_contents($lqsFile, $lqs);
+                        $this->logger->log('LQS file', 'SAVE END');
+
+                        $this->logger->log('Step-2', 'Redirecting to database insert');
                         return Redirect::route('ZaiInstaller::database')
                             ->with(['results' => $results]);
-                    }
-                    catch(\Exception $e){
+                    } catch (\Exception $e) {
+                        $this->logger->log('End with', 'Response status failed');
+                        $this->logger->log('Exception', $e->getMessage());
+                        $this->logger->log('', '==============END=============');
                         return Redirect::back()->withErrors($e->getMessage());
                     }
-                }
-                else{
+                } else {
+                    $this->logger->log('End with api response', 'Failed');
+                    $this->logger->log('', '==============END=============');
                     return Redirect::back()->withErrors($data->message);
                 }
             } else {
+                $this->logger->log('End with', 'Purchase key invalid');
+                $this->logger->log('', '==============END=============');
                 return Redirect::back()->withErrors('Something went wrong with your purchase key.');
             }
-        }
-        else{
+        } else {
+            $this->logger->log('End with', 'Purchase app code invalid');
+            $this->logger->log('', '==============END=============');
             return Redirect::back()->withErrors('Something went wrong with your purchase key.');
         }
     }
 
+    public function is_valid_domain_name($url)
+    {
+        try {
+            $parseUrl = parse_url(trim($url));
+            if (isset($parseUrl['host'])) {
+                $host = $parseUrl['host'];
+            } else {
+                $path = explode('/', $parseUrl['path']);
+                $host = $path[0];
+            }
+            $domain_name = trim($host);
+
+            return (preg_match("/^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,6}$/i", $domain_name));
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function saveInfoInFile($url, $purchase_code)
+    {
+        $this->logger->log('Step-1', 'Start install info save from saveInfoInFile');
+        $infoFile = storage_path('info');
+        if (file_exists($infoFile)) {
+            unlink($infoFile);
+        }
+        
+        $data = json_encode([
+            'd' => base64_encode($this->get_domain_name($url)),
+            'i' => date('ymdhis'),
+            'p' => base64_encode($purchase_code),
+            'u' => date('ymdhis'),
+        ]);
+        
+        file_put_contents($infoFile, $data);
+        $this->logger->log('Step-1', 'END install info save from saveInfoInFile');
+    }
+
     public function database()
     {
+        $this->logger->log('STEP-2', 'Start from database method');
+        $this->logger->log('Migration & seed', 'Start');
         $response = $this->databaseManager->migrateAndSeed();
-        if($response['status'] == 'success') {
+        $this->logger->log('Migration & seed', 'END');
+        $this->logger->log('Migration & seed response ', $response);
+        if ($response['status'] == 'success') {
+            $this->logger->log('Migration & seed response status', 'success');
             $lqsFile = storage_path('lqs');
-            DB::beginTransaction();
-            try{
-                $lqs = file_get_contents($lqsFile);
+            $getInfoFile = storage_path('info');
+            try {
+                if (file_exists($lqsFile)) {
+                    $this->logger->log('LQS file', 'get content start');
+                    $lqs = file_get_contents($lqsFile);
+                    $this->logger->log('LQS file', 'get content END');
+                    unlink($lqsFile);
+                }
+                elseif(!$this->is_valid_domain_name(request()->fullUrl())){
+                    $this->logger->log('LQS file', 'Local sql get content start');
+                    $lqs = file_get_contents(storage_path('app/lms.sql'));
+                    $this->logger->log('LQS file', 'Local sql get content END');
+                }
+                
+                $this->logger->log('SQL import', 'START');
                 DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-                if($lqs != null && $lqs != ""){
+                if ($lqs != null && $lqs != "") {
                     DB::unprepared($lqs);
                 }
                 DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-                DB::commit();
-                unlink($lqsFile);
-
+                $this->logger->log('SQL import', 'END');
+                
+                $this->logger->log('Installed file', 'Write Start');
                 $installedLogFile = storage_path('installed');
-
-                if (! file_exists($installedLogFile)) {
+                if (file_exists($getInfoFile)) {
+                    $data = file_get_contents($getInfoFile);
+                    unlink($getInfoFile);
+                } else {
                     $data = json_encode([
+                        'd' => base64_encode($this->get_domain_name(request()->fullUrl())),
                         'i' => date('ymdhis'),
                         'u' => date('ymdhis'),
-                        'd' => base64_encode($this->get_domain_name(request()->fullUrl())),
                     ]);
-
+                }
+                
+                if (!file_exists($installedLogFile)) {
                     file_put_contents($installedLogFile, $data);
                 }
 
-                return redirect('/');
+                $this->logger->log('Installed file', 'Write END');
 
-            }catch(\Exception $e){
+                $this->logger->log('End with', 'Successfully installed');
+                $this->logger->log('', '==============END=============');
+                return redirect('/');
+            } catch (\Exception $e) {
                 if (file_exists($lqsFile)) {
                     unlink($lqsFile);
                 }
-                Log::info($e->getMessage());
+                if (file_exists($getInfoFile)) {
+                    unlink($getInfoFile);
+                }
                 DB::rollBack();
+
+                $this->logger->log('End with', 'DB import failed');
+                $this->logger->log('Exception', $e->getMessage());
+                $this->logger->log('', '==============END=============');
                 return Redirect::back()->withErrors('Something went wrong!');
             }
-        }
-        else {
+        } else {
+            $this->logger->log('End with', 'Migration & seed failed');
+            $this->logger->log('', '==============END=============');
             return Redirect::back()->withErrors($response['message']);
         }
     }
-    function get_domain_name($url){
+    function get_domain_name($url)
+    {
         $parseUrl = parse_url(trim($url));
-        if(isset($parseUrl['host'])) {
+        if (isset($parseUrl['host'])) {
             $host = $parseUrl['host'];
         } else {
             $path = explode('/', $parseUrl['path']);
@@ -267,7 +423,8 @@ class InstallController extends Controller
     }
     public function saveENV(Request $request)
     {
-        $env_val['APP_KEY'] = 'base64:'.base64_encode(Str::random(32));
+        $this->logger->log('ENV', 'Write start from saveENV');
+        $env_val['APP_KEY'] = 'base64:' . base64_encode(Str::random(32));
         $env_val['APP_URL'] = $request->app_url;
         $env_val['DB_HOST'] = $request->db_host;
         $env_val['DB_DATABASE'] = $request->db_name;
@@ -277,16 +434,15 @@ class InstallController extends Controller
         $env_val['MAIL_PORT'] = $request->mail_port;
         $env_val['MAIL_USERNAME'] = $request->mail_username;
         $env_val['MAIL_PASSWORD'] = $request->mail_password;
-
+        
         $this->setEnvValue($env_val);
-
     }
-
+    
     public function setEnvValue($values)
     {
+        $this->logger->log('ENV', 'Write start from setEnvValue');
         $envFile = app()->environmentFilePath();
         $str = file_get_contents($envFile);
-
         if (count($values) > 0) {
             foreach ($values as $envKey => $envValue) {
                 $str .= "\n";
@@ -300,9 +456,14 @@ class InstallController extends Controller
                 }
             }
         }
-
+        
         $str = substr($str, 0, -1);
-        if (!file_put_contents($envFile, $str)) return false;
+        if (!file_put_contents($envFile, $str)){
+            $this->logger->log('ENV', 'Write setEnvValue failed');
+            return false;
+        }
+        
+        $this->logger->log('ENV', 'Write setEnvValue successfully');
         return true;
     }
 
@@ -336,8 +497,4 @@ class InstallController extends Controller
             return false;
         }
     }
-
-
-
-
 }
