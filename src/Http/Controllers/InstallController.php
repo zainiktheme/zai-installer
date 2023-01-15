@@ -25,7 +25,7 @@ class InstallController extends Controller
      */
     public function __construct(DatabaseManager $databaseManager)
     {
-        $this->logger = new Logger(storage_path().'/logs/'.'install.log');
+        $this->logger = new Logger(storage_path() . '/logs/' . 'install.log');
         $this->databaseManager = $databaseManager;
     }
 
@@ -154,7 +154,7 @@ class InstallController extends Controller
         $this->logger->log('Request Data', $request->all());
         if (config('app.app_code')) {
             $isValidDomain = $this->is_valid_domain_name($request->fullUrl());
-            
+
             if ($isValidDomain) {
                 $rules = [
                     'app_name' => 'bail|required',
@@ -166,7 +166,7 @@ class InstallController extends Controller
                     'app_name' => 'bail|required',
                 ];
             }
-            
+
             $request->validate($rules, [
                 'purchase_code.required' => 'Purchase code field is required',
                 'email.required' => 'Customer email field is required',
@@ -183,14 +183,14 @@ class InstallController extends Controller
                 'url' => $request->fullUrl(),
                 'app_url' => $request->app_url
             ];
-            
-            
+
+
             if (!$this->checkDatabaseConnection($request)) {
                 $this->logger->log('End with', 'Database credential is not correct!');
                 $this->logger->log('', '==============END=============');
                 return Redirect::back()->withErrors('Database credential is not correct!');
             }
-            
+
             if (!$isValidDomain) {
                 $this->logger->log('Domain', 'Invalid');
                 $this->logger->log('URL', $request->fullUrl());
@@ -216,7 +216,7 @@ class InstallController extends Controller
                         $results = $this->saveENV($request);
                         $this->logger->log('ENV', 'Write END');
                         $this->logger->log('ENV Write', $results ? 'True' : 'False');
-                        
+
                         $this->logger->log('ENV save', 'Event Call START');
                         event(new EnvironmentSaved($request));
                         $this->logger->log('ENV save', 'Event Call END');
@@ -242,7 +242,7 @@ class InstallController extends Controller
             $this->logger->log('', '======Response print START=====');
             $this->logger->log('Response data', json_encode($response->object()));
             $this->logger->log('', '======Response print END=====');
-            
+
             if ($response->successful()) {
                 $this->logger->log('Response', 'Successfull');
                 $data = $response->object();
@@ -254,17 +254,17 @@ class InstallController extends Controller
                         $results = $this->saveENV($request);
                         $this->logger->log('ENV', 'Write END');
                         $this->logger->log('ENV Write', $results);
-                        
+
                         $this->logger->log('ENV save', 'Event Call START');
                         event(new EnvironmentSaved($request));
                         $this->logger->log('ENV save', 'Event Call END');
-                        
+
                         $lqsFile = storage_path('lqs');
-                        
+
                         if (file_exists($lqsFile)) {
                             unlink($lqsFile);
                         }
-                        
+
                         $this->logger->log('Step-1', 'Install info write Start');
                         $this->saveInfoInFile($request->fullUrl(), $request->purchase_code);
                         $this->logger->log('Step-1', 'Install info write END');
@@ -324,14 +324,14 @@ class InstallController extends Controller
         if (file_exists($infoFile)) {
             unlink($infoFile);
         }
-        
+
         $data = json_encode([
             'd' => base64_encode($this->get_domain_name($url)),
             'i' => date('ymdhis'),
             'p' => base64_encode($purchase_code),
             'u' => date('ymdhis'),
         ]);
-        
+
         file_put_contents($infoFile, $data);
         $this->logger->log('Step-1', 'END install info save from saveInfoInFile');
     }
@@ -353,13 +353,12 @@ class InstallController extends Controller
                     $lqs = file_get_contents($lqsFile);
                     $this->logger->log('LQS file', 'get content END');
                     unlink($lqsFile);
-                }
-                elseif(!$this->is_valid_domain_name(request()->fullUrl())){
+                } elseif (!$this->is_valid_domain_name(request()->fullUrl())) {
                     $this->logger->log('LQS file', 'Local sql get content start');
                     $lqs = file_get_contents(storage_path('app/lms.sql'));
                     $this->logger->log('LQS file', 'Local sql get content END');
                 }
-                
+
                 $this->logger->log('SQL import', 'START');
                 DB::statement('SET FOREIGN_KEY_CHECKS=0;');
                 if ($lqs != null && $lqs != "") {
@@ -367,7 +366,7 @@ class InstallController extends Controller
                 }
                 DB::statement('SET FOREIGN_KEY_CHECKS=1;');
                 $this->logger->log('SQL import', 'END');
-                
+
                 $this->logger->log('Installed file', 'Write Start');
                 $installedLogFile = storage_path('installed');
                 if (file_exists($getInfoFile)) {
@@ -380,7 +379,7 @@ class InstallController extends Controller
                         'u' => date('ymdhis'),
                     ]);
                 }
-                
+
                 if (!file_exists($installedLogFile)) {
                     file_put_contents($installedLogFile, $data);
                 }
@@ -434,37 +433,62 @@ class InstallController extends Controller
         $env_val['MAIL_PORT'] = $request->mail_port;
         $env_val['MAIL_USERNAME'] = $request->mail_username;
         $env_val['MAIL_PASSWORD'] = $request->mail_password;
-        
+
         $this->setEnvValue($env_val);
     }
-    
+
     public function setEnvValue($values)
     {
         $this->logger->log('ENV', 'Write start from setEnvValue');
-        $envFile = app()->environmentFilePath();
-        $str = file_get_contents($envFile);
         if (count($values) > 0) {
             foreach ($values as $envKey => $envValue) {
-                $str .= "\n";
-                $keyPosition = strpos($str, "{$envKey}=");
-                $endOfLinePosition = strpos($str, "\n", $keyPosition);
-                $oldLine = substr($str, $keyPosition, $endOfLinePosition - $keyPosition);
-                if (!$keyPosition || !$endOfLinePosition || !$oldLine) {
-                    $str .= "{$envKey}=\"{$envValue}\"\n";
-                } else {
-                    $str = str_replace($oldLine, "{$envKey}=\"{$envValue}\"", $str);
-                }
+                $this->setEnvironmentValue($envKey, $envValue);
             }
         }
-        
-        $str = substr($str, 0, -1);
-        if (!file_put_contents($envFile, $str)){
-            $this->logger->log('ENV', 'Write setEnvValue failed');
-            return false;
-        }
-        
+
         $this->logger->log('ENV', 'Write setEnvValue successfully');
         return true;
+    }
+
+    function setEnvironmentValue($envKey, $envValue)
+    {
+        try {
+            $this->logger->log('ENV Write start', $envKey.'=>'.$envValue);
+            $envFile = app()->environmentFilePath();
+            $str = file_get_contents($envFile);
+            $str .= "\n"; // In case the searched variable is in the last line without \n
+            $keyPosition = strpos($str, "{$envKey}=");
+            if ($keyPosition) {
+                $endOfLinePosition = strpos($str, PHP_EOL, $keyPosition);
+                $oldLine = substr($str, $keyPosition, $endOfLinePosition - $keyPosition);
+                $envValue = str_replace(chr(92), "\\\\", $envValue);
+                $envValue = str_replace('"', '\"', $envValue);
+                $newLine = "{$envKey}=\"{$envValue}\"";
+                if ($oldLine != $newLine) {
+                    $str = str_replace($oldLine, $newLine, $str);
+                    $str = substr($str, 0, -1);
+                    $fp = fopen($envFile, 'w');
+                    fwrite($fp, $str);
+                    fclose($fp);
+                }
+            } else if (strtoupper($envKey) == $envKey) {
+                $envValue = str_replace(chr(92), "\\\\", $envValue);
+                $envValue = str_replace('"', '\"', $envValue);
+                $newLine = "{$envKey}=\"{$envValue}\"\n";
+                $str .= $newLine;
+                $str = substr($str, 0, -1);
+                $fp = fopen($envFile, 'w');
+                fwrite($fp, $str);
+                fclose($fp);
+            }
+
+            $this->logger->log('ENV Write END', $envKey.'=>'.$envValue);
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->log('ENV', 'Write setEnvValue failed');
+            $this->logger->log('Exception', $e->getMessage());
+            return false;
+        }
     }
 
     private function checkDatabaseConnection(Request $request)
