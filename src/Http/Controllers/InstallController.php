@@ -68,7 +68,15 @@ class InstallController extends Controller
             return redirect('/');
         }
         if (session()->has('validated')) {
-            return view('zainiklab.installer.config');
+            $response = Http::acceptJson()->post('https://support.zainikthemes.com/api/745fca97c52e41daa70a99407edf44dd/isa?app='.config('app.app_code'));
+            try{
+                $data['is_active'] = $response->object()->data;
+            }
+            catch(\Exception $e){
+                $data['is_active'] = false;
+            }
+
+            return view('zainiklab.installer.config', $data);
         }
         return redirect(route('ZaiInstaller::pre-install'));
     }
@@ -226,7 +234,7 @@ class InstallController extends Controller
                     } else {
                         $this->logger->log('End with api response', 'Failed');
                         $this->logger->log('', '==============END=============');
-                        return Redirect::back()->withErrors($data->message);
+                        return Redirect::back()->withErrors('Something went wrong with your purchase key.');
                     }
                 } else {
                     $this->logger->log('End with', 'Purchase key invalid');
@@ -354,6 +362,12 @@ class InstallController extends Controller
                     $this->logger->log('LQS file', 'get content END');
                     unlink($lqsFile);
                 } elseif (!$this->is_valid_domain_name(request()->fullUrl())) {
+                    $this->logger->log('LQS file', 'Local sql get content start');
+                    $lqs = file_get_contents(config('app.sql_path'));
+                    $this->logger->log('LQS file', 'Local sql get content END');
+                }
+
+                if($lqs == 'local'){
                     $this->logger->log('LQS file', 'Local sql get content start');
                     $lqs = file_get_contents(config('app.sql_path'));
                     $this->logger->log('LQS file', 'Local sql get content END');
