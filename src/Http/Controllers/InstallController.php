@@ -355,7 +355,7 @@ class InstallController extends Controller
                     unlink($lqsFile);
                 } elseif (!$this->is_valid_domain_name(request()->fullUrl())) {
                     $this->logger->log('LQS file', 'Local sql get content start');
-                    $lqs = file_get_contents(storage_path('app/lms.sql'));
+                    $lqs = file_get_contents(config('app.sql_path'));
                     $this->logger->log('LQS file', 'Local sql get content END');
                 }
 
