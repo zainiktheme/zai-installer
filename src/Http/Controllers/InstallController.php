@@ -478,7 +478,7 @@ class InstallController extends Controller
             $str .= "\n"; // In case the searched variable is in the last line without \n
             $keyPosition = strpos($str, "{$envKey}=");
             if ($keyPosition) {
-                $endOfLinePosition = strpos($str, "\r\n", $keyPosition);
+                $endOfLinePosition = strpos($str, PHP_EOL, $keyPosition);
                 $oldLine = substr($str, $keyPosition, $endOfLinePosition - $keyPosition);
                 $envValue = str_replace(chr(92), "\\\\", $envValue);
                 $envValue = str_replace('"', '\"', $envValue);
