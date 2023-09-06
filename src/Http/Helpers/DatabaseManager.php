@@ -12,12 +12,27 @@ class DatabaseManager
 {
 
 
-    public function migrateAndSeed()
-    {
+    // public function migrateAndSeed()
+    // {
+    //     try {
+    //         Artisan::call('migrate:fresh', ['--force'=> true]);
+    //         Artisan::call('db:seed', ['--force' => true]);
+    //         Artisan::call('storage:link');
+    //     } catch (\Exception $e) {
+    //         return $this->response($e->getMessage(), 'error');
+    //     }
+    //     return $this->response('Seed Complete', 'success');
+
+    // }
+    public function migrateAndSeed(){
         try {
             Artisan::call('migrate:fresh', ['--force'=> true]);
             Artisan::call('db:seed', ['--force' => true]);
-            Artisan::call('storage:link');
+            try {
+                Artisan::call('storage:link');
+            }catch (\Exception $ex){
+                return $this->response('Seed Complete But storage link not work', 'success');
+            }
         } catch (\Exception $e) {
             return $this->response($e->getMessage(), 'error');
         }
