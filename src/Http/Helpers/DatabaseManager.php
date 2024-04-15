@@ -24,20 +24,52 @@ class DatabaseManager
     //     return $this->response('Seed Complete', 'success');
 
     // }
-    public function migrateAndSeed(){
+    public function migrateAndSeed()
+    {
         try {
-            Artisan::call('migrate:fresh', ['--force'=> true]);
+            Artisan::call('migrate:fresh', ['--force' => true]);
             Artisan::call('db:seed', ['--force' => true]);
-            try {
+            if (function_exists('symlink')) {
                 Artisan::call('storage:link');
-            }catch (\Exception $ex){
-                return $this->response('Seed Complete But storage link not work', 'success');
+            } else {
+                $this->copyFolder(storage_path('app/public'), public_path()."/storage/");
             }
         } catch (\Exception $e) {
             return $this->response($e->getMessage(), 'error');
         }
         return $this->response('Seed Complete', 'success');
 
+    }
+
+    function copyFolder($source, $destination)
+    {
+        if (is_dir($source)) {
+            if (!is_dir($destination)) {
+                mkdir($destination, 0755, true); // Create the destination directory if it doesn't exist
+            }
+
+            $dir = opendir($source);
+
+            while (false !== ($file = readdir($dir))) {
+                if (($file != '.') && ($file != '..')) {
+                    $src = $source . '/' . $file;
+                    $dest = $destination . '/' . $file;
+
+                    if (is_dir($src)) {
+                        // If it's a directory, recursively call the function
+                        copyFolder($src, $dest);
+                    } else {
+                        // If it's a file, use copy() to copy it
+                        copy($src, $dest);
+                    }
+                }
+            }
+
+            closedir($dir);
+        } else {
+            // If the source is a file, use copy() to copy it
+            copy($source, $destination);
+        }
     }
 
 
@@ -50,7 +82,7 @@ class DatabaseManager
     private function migrate(BufferedOutput $outputLog)
     {
         try {
-            Artisan::call('migrate:fresh', ['--force'=> true], $outputLog);
+            Artisan::call('migrate:fresh', ['--force' => true], $outputLog);
         } catch (\Exception $e) {
             return $this->response('Migration not Complete', 'error', $outputLog);
         }
@@ -100,11 +132,11 @@ class DatabaseManager
     {
         if (DB::connection() instanceof SQLiteConnection) {
             $database = DB::connection()->getDatabaseName();
-            if (! file_exists($database)) {
+            if (!file_exists($database)) {
                 touch($database);
                 DB::reconnect(Config::get('database.default'));
             }
-            $outputLog->write('Using SqlLite database: '.$database, 1);
+            $outputLog->write('Using SqlLite database: ' . $database, 1);
         }
     }
 }
