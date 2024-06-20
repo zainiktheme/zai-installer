@@ -84,7 +84,7 @@ class InstallController extends Controller
     public function serverValidation(Request $request)
     {
         //if ($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && $this->allow_url_fopen() == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1) {
-        if($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && in_array($this->allow_url_fopen(), ['1','on','On', 1]) == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1){
+        if($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && in_array($this->allow_url_fopen(), ['1','on','On', 1]) == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1 && $this->hasSymlink() == 1){
             session()->put('validated', 'Yes');
             return redirect(route('ZaiInstaller::config'));
         }
@@ -160,6 +160,11 @@ class InstallController extends Controller
     public function json()
     {
         return extension_loaded('json');
+    }
+
+    public function hasSymlink()
+    {
+        return function_exists('symlink');
     }
 
     public function final(Request $request)

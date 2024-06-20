@@ -33,10 +33,10 @@
                 <input type="text" class="form-control" id="AppName" name="app_name" value="{{ $_ENV['APP_NAME'] }}" placeholder="ZaiInstaller" />
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6 d-none">
               <div class="form-group">
                 <label for="AppURL">App URL</label>
-                <input type="text" class="form-control" id="AppURL" name="app_url" value="{{ $_ENV['APP_URL'] }}" placeholder="http://localhost:8000" />
+                  <input type="text" class="form-control" id="AppURL" name="app_url" value="{{ explode('/', (preg_replace('#^www\.#', '', preg_replace('#^https?://#', '', request()->url()))))[0] }}" placeholder="http://localhost:8000" />
               </div>
             </div>
           </div>
