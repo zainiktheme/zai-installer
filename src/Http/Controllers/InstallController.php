@@ -325,7 +325,7 @@ class InstallController extends Controller
             }
             $domain_name = trim($host);
 
-            return (preg_match("/^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,6}$/i", $domain_name));
+            return (preg_match("/^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,20}$/i", $domain_name));
         } catch (\Exception $e) {
             return false;
         }
