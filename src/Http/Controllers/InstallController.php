@@ -11,6 +11,7 @@ use Zainiklab\ZaiInstaller\Events\EnvironmentSaved;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Zainiklab\ZaiInstaller\Http\Helpers\DatabaseManager;
+use Zainiklab\ZaiInstaller\Http\Helpers\EnvManager;
 
 class InstallController extends Controller
 {
@@ -84,7 +85,7 @@ class InstallController extends Controller
     public function serverValidation(Request $request)
     {
         //if ($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && $this->allow_url_fopen() == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1) {
-        if($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && in_array($this->allow_url_fopen(), ['1','on','On', 1]) == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1 && $this->hasSymlink() == 1){
+        if($this->phpversion() > 7.0 && $this->mysqli() == 1 && $this->curl_version() == 1 && in_array($this->allow_url_fopen(), ['1','on','On', 1]) == 1 && $this->openssl() == 1  && $this->zip() == 1 && $this->pdo() == 1 && $this->bcmath() == 1 && $this->ctype() == 1 && $this->fileinfo() == 1 && $this->mbstring() == 1 && $this->tokenizer() == 1 && $this->xml() == 1 && $this->json() == 1){
             session()->put('validated', 'Yes');
             return redirect(route('ZaiInstaller::config'));
         }
@@ -121,7 +122,7 @@ class InstallController extends Controller
     {
         return extension_loaded('pdo');
     }
-   
+
     public function zip()
     {
         return extension_loaded('zip');
@@ -160,11 +161,6 @@ class InstallController extends Controller
     public function json()
     {
         return extension_loaded('json');
-    }
-
-    public function hasSymlink()
-    {
-        return function_exists('symlink');
     }
 
     public function final(Request $request)
@@ -330,7 +326,7 @@ class InstallController extends Controller
             }
             $domain_name = trim($host);
 
-            return (preg_match("/^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,20}$/i", $domain_name));
+            return (preg_match("/^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,6}$/i", $domain_name));
         } catch (\Exception $e) {
             return false;
         }
@@ -479,29 +475,8 @@ class InstallController extends Controller
     {
         try {
             $this->logger->log('ENV Write start', $envKey.'=>'.$envValue);
-            $envFile = app()->environmentFilePath();
-            $str = file_get_contents($envFile);
-            $str .= "\n"; // In case the searched variable is in the last line without \n
-            $keyPosition = strpos($str, "{$envKey}=");
-            if ($keyPosition) {
-                if(PHP_OS_FAMILY === 'Windows'){
-                    $endOfLinePosition = strpos($str, "\n", $keyPosition);
-                }
-                else{
-                    $endOfLinePosition = strpos($str, PHP_EOL, $keyPosition);
-                }
-                $oldLine = substr($str, $keyPosition, $endOfLinePosition - $keyPosition);
-                $envValue = str_replace(chr(92), "\\\\", $envValue);
-                $envValue = str_replace('"', '\"', $envValue);
-                $newLine = "{$envKey}=\"{$envValue}\"";
-                if ($oldLine != $newLine) {
-                    $str = str_replace($oldLine, $newLine, $str);
-                    $str = substr($str, 0, -1);
-                    $fp = fopen($envFile, 'w');
-                    fwrite($fp, $str);
-                    fclose($fp);
-                }
-            }
+
+            EnvManager::setEnvironmentValue($envKey, $envValue);
 
             $this->logger->log('ENV Write END', $envKey.'=>'.$envValue);
             return true;
