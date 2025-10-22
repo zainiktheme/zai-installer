@@ -32,7 +32,7 @@ class DatabaseManager
             if (function_exists('symlink')) {
                 Artisan::call('storage:link');
             } else {
-                // $this->copyFolder(storage_path('app/public'), public_path()."/storage/");
+                $this->copyFolder(storage_path('app/public'), public_path()."/storage/");
                 EnvManager::setValue("IS_SYMLINK_SUPPORT", "false");
             }
         } catch (\Exception $e) {
